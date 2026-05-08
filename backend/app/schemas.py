@@ -15,15 +15,7 @@ class HealthResponse(BaseModel):
 
 
 # Control: DEV-001 (input validation)
-class TokenRequest(BaseModel):
-    subject: str = Field(min_length=1, max_length=128)
-    role: str = Field(default="admin", min_length=1, max_length=64)
 
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str
-    expires_in: int
 
 
 class PasswordHashRequest(BaseModel):

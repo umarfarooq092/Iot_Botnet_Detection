@@ -1,0 +1,23 @@
+[
+ {
+  "RuleID": "generic-api-key",
+  "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+  "StartLine": 15,
+  "EndLine": 15,
+  "StartColumn": 2,
+  "EndColumn": 63,
+  "Match": "JWT_SECRET=replace-with-a-strong-secret-at-least-32-characters",
+  "Secret": "replace-with-a-strong-secret-at-least-32-characters",
+  "File": "backend/.env.example",
+  "SymlinkFile": "",
+  "Commit": "9fb38e3c1dd2ab811f6b7d75e49ca6f8e3a268be",
+  "Link": "https://github.com/umarfarooq092/Iot_Botnet_Detection/blob/9fb38e3c1dd2ab811f6b7d75e49ca6f8e3a268be/backend/.env.example#L15",
+  "Entropy": 3.6697006,
+  "Author": "umarfarooq092",
+  "Email": "umar092farooq@gmail.com",
+  "Date": "2026-05-08T03:26:41Z",
+  "Message": "Add secure IoT botnet detection project setup",
+  "Tags": [],
+  "Fingerprint": "9fb38e3c1dd2ab811f6b7d75e49ca6f8e3a268be:backend/.env.example:generic-api-key:15"
+ }
+]
