@@ -9,7 +9,7 @@ from typing import Final
 
 DEFAULT_APP_NAME: Final = "SSD Assignment 3 API"
 DEFAULT_PORT: Final = 8000
-DEFAULT_CORS_ORIGIN: Final = "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174"
+DEFAULT_CORS_ORIGIN: Final = "https://localhost:5173"
 DEFAULT_REQUEST_BODY_LIMIT_BYTES: Final = 1_048_576
 DEFAULT_RATE_LIMIT_WINDOW_SECONDS: Final = 60
 DEFAULT_RATE_LIMIT_MAX: Final = 120

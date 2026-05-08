@@ -51,7 +51,6 @@ The project is built as a monorepo so backend, frontend, operations scripts, and
 - `backend/` FastAPI service, tests, and API security logic
 - `frontend/` React dashboard and auth UX
 - `ops/` utility scripts for backups, simulation, and security operations
-- `infra/` container and infrastructure assets
 - `submission/` packaged mirror for submission artifacts
 
 ## 4. How It Works (Runtime Flow)
@@ -126,7 +125,8 @@ From repository root:
 (Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned) ; (& ".\.venv\Scripts\Activate.ps1")
 cd backend
 pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Run locally bound to localhost only to avoid exposing the service on the LAN
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 In another terminal:

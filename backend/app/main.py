@@ -141,7 +141,7 @@ def main() -> None:
 
     uvicorn_args: dict[str, object] = {
         "app": "app.main:app",
-        "host": "0.0.0.0",
+        "host": "127.0.0.1",
         "port": settings.port,
         "reload": settings.environment != "production",
     }

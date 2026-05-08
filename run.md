@@ -45,7 +45,8 @@ $env:DEMO_DEVICE_API_KEY = "device-key-001"
 ## 5) Run Backend Server
 
 ```powershell
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Run locally bound to localhost only to avoid exposing the service on the LAN
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Health check URL:

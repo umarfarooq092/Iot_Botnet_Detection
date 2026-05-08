@@ -16,8 +16,8 @@ from .config import get_settings
 
 def _default_whitelist() -> list[str]:
     s = get_settings()
-    # include the frontend and localhost by default
-    whitelist = [s.frontend_url, "http://localhost", "http://127.0.0.1"]
+    # include only the configured frontend URL by default (avoid broad localhost/127.0.0.1 allowances)
+    whitelist = [s.frontend_url]
     return whitelist
 
 
