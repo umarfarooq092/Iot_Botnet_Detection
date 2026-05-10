@@ -96,19 +96,22 @@ type BackupSnapshot = {
 // Helper functions for backup formatting
 function convertToCsv(data: Array<Record<string, unknown>>): string {
   if (data.length === 0) return "";
-  
+
   const headers = Object.keys(data[0]);
-  const headerRow = headers.map(h => `"${h}"`).join(",");
-  
-  const rows = data.map(row => 
-    headers.map(header => {
-      const value = row[header];
+  const headerRow = headers.map((header) => `"${header}"`).join(",");
+
+  const rows = data.map((row) => {
+    const entries = Object.entries(row);
+    return headers
+      .map((header) => {
+        const value = entries.find(([key]) => key === header)?.[1];
       if (value === null || value === undefined) return "";
       const str = String(value);
       return `"${str.replace(/"/g, '""')}"`;
-    }).join(",")
-  );
-  
+      })
+      .join(",");
+  });
+
   return [headerRow, ...rows].join("\n");
 }
 
@@ -182,6 +185,7 @@ function renderDataTable(title: string, data: Array<Record<string, unknown>>): J
                 row.style.backgroundColor = rowIdx % 2 === 0 ? "#0f3460" : "#1a4d6d";
               }}>
                 {headers.map((h, colIdx) => (
+                  // Use entry lookup instead of dynamic indexing to satisfy security linting.
                   <td key={colIdx} style={{
                     padding: "10px 12px",
                     borderRight: colIdx < headers.length - 1 ? "1px solid #1a3a52" : "none",
@@ -189,10 +193,20 @@ function renderDataTable(title: string, data: Array<Record<string, unknown>>): J
                     wordWrap: "break-word",
                     maxWidth: "200px"
                   }}>
-                    {row[h] === null ? <span style={{ color: "#888", fontStyle: "italic" }}>null</span> : 
-                     row[h] === true ? <span style={{ color: "#4ade80", fontWeight: "bold" }}>✓ true</span> :
-                     row[h] === false ? <span style={{ color: "#ef4444", fontWeight: "bold" }}>✗ false</span> :
-                     String(row[h]).length > 100 ? String(row[h]).substring(0, 100) + "..." : String(row[h])}
+                    {(() => {
+                      const value = Object.entries(row).find(([key]) => key === h)?.[1];
+                      if (value === null || value === undefined) {
+                        return <span style={{ color: "#888", fontStyle: "italic" }}>null</span>;
+                      }
+                      if (value === true) {
+                        return <span style={{ color: "#4ade80", fontWeight: "bold" }}>✓ true</span>;
+                      }
+                      if (value === false) {
+                        return <span style={{ color: "#ef4444", fontWeight: "bold" }}>✗ false</span>;
+                      }
+                      const valueText = String(value);
+                      return valueText.length > 100 ? `${valueText.substring(0, 100)}...` : valueText;
+                    })()}
                   </td>
                 ))}
               </tr>
@@ -1392,7 +1406,7 @@ function BackupPage({ apiGet, token }: { apiGet: <T>(path: string, authToken?: s
 
   const downloadCSV = (dataKey: keyof Omit<BackupSnapshot, 'exported_at'>, title: string) => {
     if (!snapshot) return;
-    const data = snapshot[dataKey] as Array<Record<string, unknown>>;
+    const data = getSnapshotSection(snapshot, dataKey);
     const csv = convertToCsv(data);
     if (!csv) {
       alert(`No ${title} data to download`);
@@ -1416,13 +1430,35 @@ function BackupPage({ apiGet, token }: { apiGet: <T>(path: string, authToken?: s
     ];
 
     let allCsv = sections.map(({ key, title }) => {
-      const data = snapshot[key] as Array<Record<string, unknown>>;
+      const data = getSnapshotSection(snapshot, key);
       const csv = convertToCsv(data);
       return csv ? `${title}\n${csv}` : "";
     }).filter(Boolean).join("\n\n");
 
     downloadFile(allCsv, `backup_all_${timestamp}.csv`, "text/csv");
   };
+
+  function getSnapshotSection(
+    value: BackupSnapshot,
+    section: keyof Omit<BackupSnapshot, "exported_at">
+  ): Array<Record<string, unknown>> {
+    switch (section) {
+      case "users":
+        return value.users;
+      case "devices":
+        return value.devices;
+      case "traffic_logs":
+        return value.traffic_logs;
+      case "alerts":
+        return value.alerts;
+      case "audit_logs":
+        return value.audit_logs;
+      case "rules":
+        return value.rules;
+      default:
+        return [];
+    }
+  }
 
   return (
     <section className="panel">
