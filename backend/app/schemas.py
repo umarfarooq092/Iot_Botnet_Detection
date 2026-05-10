@@ -114,8 +114,8 @@ class GoogleSsoInitResponse(BaseModel):
 
 
 class DeviceRegisterRequest(BaseModel):
-    device_id: str = Field(min_length=1, max_length=128)
-    name: str = Field(min_length=1, max_length=256)
+    device_id: str = Field(min_length=1, max_length=9)
+    name: str = Field(min_length=1, max_length=32)
     api_key: str | None = Field(default=None, min_length=1, max_length=256)
 
 

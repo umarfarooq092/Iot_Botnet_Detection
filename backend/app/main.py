@@ -40,10 +40,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    # During local development be permissive to avoid CORS/preflight issues from dev servers.
+    allow_origins=(["*"] if settings.environment == "development" else settings.cors_origins),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "X-Api-Key", "X-Device-Id"],
 )
 
 app.add_middleware(SessionMiddleware, secret_key=settings.jwt_secret, same_site="lax", https_only=settings.tls_enabled)

@@ -149,13 +149,13 @@ class SecurityTests(unittest.TestCase):
         device_register = client.post(
             "/api/v1/devices/register",
             headers=bearer,
-            json={"device_id": "device-002", "name": "Lab Sensor", "api_key": "device-key-002"},
+            json={"device_id": "dev002", "name": "Lab Sensor", "api_key": "device-key-002"},
         )
         self.assertEqual(device_register.status_code, 200)
 
         ingest_response = client.post(
             "/api/v1/devices/ingest",
-            headers={"X-Device-Id": "device-002", "X-Api-Key": "device-key-002"},
+            headers={"X-Device-Id": "dev002", "X-Api-Key": "device-key-002"},
             json={"destination_ip": "10.0.0.20", "destination_port": 1883, "request_count": 10, "payload": {"temperature": 42}},
         )
         self.assertEqual(ingest_response.status_code, 200)
@@ -198,13 +198,13 @@ class SecurityTests(unittest.TestCase):
         register_response = client.post(
             "/api/v1/devices/register",
             headers=bearer,
-            json={"device_id": "device-003", "name": "Anomaly Probe", "api_key": "device-key-003"},
+            json={"device_id": "dev003", "name": "Anomaly Probe", "api_key": "device-key-003"},
         )
         self.assertEqual(register_response.status_code, 200)
 
         ingest_response = client.post(
             "/api/v1/devices/ingest",
-            headers={"X-Device-Id": "device-003", "X-Api-Key": "device-key-003"},
+            headers={"X-Device-Id": "dev003", "X-Api-Key": "device-key-003"},
             json={
                 "destination_ip": "8.8.8.8",
                 "destination_port": 443,
@@ -226,7 +226,7 @@ class SecurityTests(unittest.TestCase):
 
         devices_response = client.get("/api/v1/devices", headers=bearer)
         self.assertEqual(devices_response.status_code, 200)
-        self.assertTrue(any(device["device_id"] == "device-003" for device in devices_response.json()))
+        self.assertTrue(any(device["device_id"] == "dev003" for device in devices_response.json()))
 
         summary_response = client.get("/api/v1/dashboard/summary", headers=bearer)
         self.assertEqual(summary_response.status_code, 200)
@@ -248,21 +248,21 @@ class SecurityTests(unittest.TestCase):
         register_response = client.post(
             "/api/v1/devices/register",
             headers=bearer,
-            json={"device_id": "device-004", "name": "Field Sensor", "api_key": "device-key-004"},
+            json={"device_id": "dev004", "name": "Field Sensor", "api_key": "device-key-004"},
         )
         self.assertEqual(register_response.status_code, 200)
 
         isolate_response = client.post(
             "/api/v1/response/isolate-device",
             headers=bearer,
-            json={"device_id": "device-004", "reason": "High-risk anomaly detected"},
+            json={"device_id": "dev004", "reason": "High-risk anomaly detected"},
         )
         self.assertEqual(isolate_response.status_code, 200)
         self.assertEqual(isolate_response.json()["status"], "isolated")
 
         ingest_after_isolation = client.post(
             "/api/v1/devices/ingest",
-            headers={"X-Device-Id": "device-004", "X-Api-Key": "device-key-004"},
+            headers={"X-Device-Id": "dev004", "X-Api-Key": "device-key-004"},
             json={"destination_ip": "10.1.0.2", "destination_port": 1883, "request_count": 4, "payload": {"ok": True}},
         )
         self.assertEqual(ingest_after_isolation.status_code, 401)
@@ -270,14 +270,14 @@ class SecurityTests(unittest.TestCase):
         deisolate_response = client.post(
             "/api/v1/response/deisolate-device",
             headers=bearer,
-            json={"device_id": "device-004", "reason": "Threat cleared"},
+            json={"device_id": "dev004", "reason": "Threat cleared"},
         )
         self.assertEqual(deisolate_response.status_code, 200)
         self.assertEqual(deisolate_response.json()["status"], "active")
 
         ingest_after_deisolation = client.post(
             "/api/v1/devices/ingest",
-            headers={"X-Device-Id": "device-004", "X-Api-Key": "device-key-004"},
+            headers={"X-Device-Id": "dev004", "X-Api-Key": "device-key-004"},
             json={"destination_ip": "10.1.0.3", "destination_port": 1883, "request_count": 3, "payload": {"ok": True}},
         )
         self.assertEqual(ingest_after_deisolation.status_code, 200)
@@ -318,13 +318,13 @@ class SecurityTests(unittest.TestCase):
         register_device = client.post(
             "/api/v1/devices/register",
             headers=bearer,
-            json={"device_id": "device-rule-001", "name": "Rule Test Device", "api_key": "device-rule-key-001"},
+            json={"device_id": "dev005", "name": "Rule Test Device", "api_key": "device-rule-key-001"},
         )
         self.assertEqual(register_device.status_code, 200)
 
         ingest_trigger = client.post(
             "/api/v1/devices/ingest",
-            headers={"X-Device-Id": "device-rule-001", "X-Api-Key": "device-rule-key-001"},
+            headers={"X-Device-Id": "dev005", "X-Api-Key": "device-rule-key-001"},
             json={
                 "destination_ip": "10.0.0.50",
                 "destination_port": 8080,
@@ -341,7 +341,7 @@ class SecurityTests(unittest.TestCase):
 
         ingest_after_disable = client.post(
             "/api/v1/devices/ingest",
-            headers={"X-Device-Id": "device-rule-001", "X-Api-Key": "device-rule-key-001"},
+            headers={"X-Device-Id": "dev005", "X-Api-Key": "device-rule-key-001"},
             json={
                 "destination_ip": "10.0.0.51",
                 "destination_port": 8080,
@@ -363,6 +363,38 @@ class SecurityTests(unittest.TestCase):
         enabled = client.post(f"/api/v1/admin/rules/{rule_id}/enable", headers=bearer)
         self.assertEqual(enabled.status_code, 200)
         self.assertTrue(enabled.json()["enabled"])
+
+    def test_device_delete_flow(self) -> None:
+        client = TestClient(app)
+
+        login_response = client.post(
+            "/api/v1/auth/login",
+            json={"username": "admin@example.com", "password": "ChangeMe123!ChangeMe123!ChangeMe123!"},
+        )
+        self.assertEqual(login_response.status_code, 200)
+        bearer = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
+
+        register_response = client.post(
+            "/api/v1/devices/register",
+            headers=bearer,
+            json={"device_id": "dev006", "name": "Temp Node", "api_key": "device-key-006"},
+        )
+        self.assertEqual(register_response.status_code, 200)
+
+        delete_response = client.delete("/api/v1/devices/dev006", headers=bearer)
+        self.assertEqual(delete_response.status_code, 200)
+        self.assertTrue(delete_response.json()["ok"])
+
+        devices_response = client.get("/api/v1/devices", headers=bearer)
+        self.assertEqual(devices_response.status_code, 200)
+        self.assertFalse(any(device["device_id"] == "dev006" for device in devices_response.json()))
+
+        ingest_after_delete = client.post(
+            "/api/v1/devices/ingest",
+            headers={"X-Device-Id": "dev006", "X-Api-Key": "device-key-006"},
+            json={"destination_ip": "10.0.0.9", "destination_port": 1883, "request_count": 2, "payload": {"ok": True}},
+        )
+        self.assertEqual(ingest_after_delete.status_code, 401)
 
     def test_day5_backup_and_security_checks(self) -> None:
         client = TestClient(app)

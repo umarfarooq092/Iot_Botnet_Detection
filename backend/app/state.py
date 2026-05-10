@@ -509,6 +509,15 @@ class AuthState:
             self.db.delete_user(username)
             self.db.delete_refresh_tokens_for_user(username)
 
+    def remove_device(self, device_id: str) -> None:
+        device = self.devices.get(device_id)
+        if device is None:
+            raise ValueError("Device not found")
+
+        self.devices.pop(device_id, None)
+        if self.db is not None:
+            self.db.delete_device(device_id)
+
     def rotate_refresh_token(self, token: str) -> str:
         record = self.refresh_tokens.get(token)
         if record is None or record.revoked or record.expires_at <= _utcnow():

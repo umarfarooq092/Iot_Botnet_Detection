@@ -444,6 +444,22 @@ def list_devices(actor: dict[str, str] = Depends(require_admin_role)) -> list[De
     return [DeviceListResponse(device_id=device.device_id, name=device.name, status=device.status) for device in devices]
 
 
+@api_router.delete("/devices/{device_id}")
+def delete_device(device_id: str, actor: dict[str, str] = Depends(require_admin_role)) -> dict[str, str | bool]:
+    try:
+        auth_state.remove_device(device_id)
+    except ValueError as error:
+        raise SecurityError(str(error)) from error
+
+    auth_state.create_audit_log(
+        actor=actor["sub"],
+        action="device_removed",
+        target=device_id,
+        details={},
+    )
+    return {"ok": True, "removed_device": device_id}
+
+
 @api_router.get("/admin/users", response_model=list[UserListResponse])
 def list_users(actor: dict[str, str] = Depends(require_admin_role)) -> list[UserListResponse]:
     users = auth_state.list_users()

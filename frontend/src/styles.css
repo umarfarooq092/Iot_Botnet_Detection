@@ -87,6 +87,18 @@ button.secondary-action {
   box-shadow: none;
 }
 
+button.danger-action {
+  background: rgba(255, 107, 139, 0.08);
+  border-color: rgba(255, 107, 139, 0.35);
+  box-shadow: none;
+  color: #ffd4de;
+}
+
+button.danger-action:hover {
+  border-color: rgba(255, 107, 139, 0.58);
+  background: rgba(255, 107, 139, 0.14);
+}
+
 .header-button.secondary,
 .cta-button.secondary {
   background: rgba(255, 255, 255, 0.02);

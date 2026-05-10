@@ -319,6 +319,22 @@ function useApiClient() {
     return data as T;
   }
 
+  async function apiDelete<T>(path: string, authToken?: string): Promise<T> {
+    const headers: Record<string, string> = {};
+    if (authToken) {
+      headers.Authorization = `Bearer ${authToken}`;
+    }
+    const response = await fetch(`${API_BASE}${path}`, {
+      method: "DELETE",
+      headers,
+    });
+    const data = await readJson(response);
+    if (!response.ok) {
+      throw new Error((data.detail as string) || (data.message as string) || "Request failed");
+    }
+    return data as T;
+  }
+
   async function login(username: string, password: string) {
     console.log("🔐 Login attempt:", username);
     const auth = await apiPost<LoginApiResponse>("/auth/login", { username, password });
@@ -380,7 +396,7 @@ function useApiClient() {
 
   const role = token ? readRoleFromToken(token) : "";
 
-  return { token, refreshToken, role, status, error, mfaPending, apiGet, apiPost, apiPatch, login, validateMfa, register, logout };
+  return { token, refreshToken, role, status, error, mfaPending, apiGet, apiPost, apiPatch, apiDelete, login, validateMfa, register, logout };
 }
 
 function AppShell({ children, token, role, logout }: { children: ReactNode; token: string; role: string; logout: () => void }) {
@@ -596,7 +612,7 @@ function UserDashboardPage({ apiGet, apiPost, token }: { apiGet: <T>(path: strin
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [selected, setSelected] = useState("");
   const [reason, setReason] = useState("Owner action from user dashboard");
-  const [deviceId, setDeviceId] = useState("user-device-001");
+  const [deviceId, setDeviceId] = useState("dev001");
   const [name, setName] = useState("My Device");
   const [apiKey, setApiKey] = useState("my-device-key-001");
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
@@ -689,11 +705,11 @@ function UserDashboardPage({ apiGet, apiPost, token }: { apiGet: <T>(path: strin
         <form className="grid-form" onSubmit={(event) => void registerDevice(event)}>
           <label>
             Device ID
-            <input onChange={(event) => setDeviceId(event.target.value)} value={deviceId} />
+            <input maxLength={9} onChange={(event) => setDeviceId(event.target.value)} value={deviceId} />
           </label>
           <label>
             Name
-            <input onChange={(event) => setName(event.target.value)} value={name} />
+            <input maxLength={32} onChange={(event) => setName(event.target.value)} value={name} />
           </label>
           <label>
             API Key
@@ -817,11 +833,11 @@ function PreviewTable({ headers, rows }: { headers: string[]; rows: string[][] }
   );
 }
 
-function DevicesPage({ apiGet, apiPost, token, role }: { apiGet: <T>(path: string, authToken?: string) => Promise<T>; apiPost: <T>(path: string, body: unknown, authToken?: string, extraHeaders?: Record<string, string>) => Promise<T>; token: string; role: string }) {
+function DevicesPage({ apiGet, apiPost, apiDelete, token, role }: { apiGet: <T>(path: string, authToken?: string) => Promise<T>; apiPost: <T>(path: string, body: unknown, authToken?: string, extraHeaders?: Record<string, string>) => Promise<T>; apiDelete: <T>(path: string, authToken?: string) => Promise<T>; token: string; role: string }) {
   const [devices, setDevices] = useState<DeviceItem[]>([]);
   const [selected, setSelected] = useState("");
   const [reason, setReason] = useState("Manual admin action from portal");
-  const [deviceId, setDeviceId] = useState("device-web-001");
+  const [deviceId, setDeviceId] = useState("dev002");
   const [name, setName] = useState("Web Registered Device");
   const [apiKey, setApiKey] = useState("web-device-key-001");
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
@@ -829,7 +845,9 @@ function DevicesPage({ apiGet, apiPost, token, role }: { apiGet: <T>(path: strin
   async function refreshDevices() {
     const data = await apiGet<DeviceItem[]>("/devices", token);
     setDevices(data);
-    if (!selected && data.length > 0) {
+    if (data.length === 0) {
+      setSelected("");
+    } else if (!data.some((device) => device.device_id === selected)) {
       setSelected(data[0].device_id);
     }
   }
@@ -861,6 +879,14 @@ function DevicesPage({ apiGet, apiPost, token, role }: { apiGet: <T>(path: strin
   async function deisolateDevice(deviceIdToDeisolate: string) {
     setSelected(deviceIdToDeisolate);
     setResult(await apiPost<Record<string, unknown>>("/response/deisolate-device", { device_id: deviceIdToDeisolate, reason }, token));
+    await refreshDevices();
+  }
+
+  async function deleteDevice(deviceIdToDelete: string) {
+    setResult(await apiDelete<Record<string, unknown>>(`/devices/${deviceIdToDelete}`, token));
+    if (selected === deviceIdToDelete) {
+      setSelected("");
+    }
     await refreshDevices();
   }
 
@@ -913,9 +939,9 @@ function DevicesPage({ apiGet, apiPost, token, role }: { apiGet: <T>(path: strin
                   <td>{device.status}</td>
                   <td>
                     <div className="button-row compact-row">
-                      <button onClick={() => setSelected(device.device_id)} type="button">Select</button>
                       <button disabled={device.status === "isolated" || role !== "admin"} onClick={() => void isolateDevice(device.device_id)} type="button">Isolate</button>
                       <button className="secondary-action" disabled={device.status !== "isolated" || role !== "admin"} onClick={() => void deisolateDevice(device.device_id)} type="button">De-isolate</button>
+                      <button className="danger-action" disabled={role !== "admin"} onClick={() => void deleteDevice(device.device_id)} type="button">Delete</button>
                     </div>
                   </td>
                 </tr>
@@ -930,11 +956,11 @@ function DevicesPage({ apiGet, apiPost, token, role }: { apiGet: <T>(path: strin
         <form className="grid-form" onSubmit={(event) => void registerDevice(event)}>
           <label>
             Device ID
-            <input onChange={(event) => setDeviceId(event.target.value)} value={deviceId} />
+            <input maxLength={9} onChange={(event) => setDeviceId(event.target.value)} value={deviceId} />
           </label>
           <label>
             Name
-            <input onChange={(event) => setName(event.target.value)} value={name} />
+            <input maxLength={32} onChange={(event) => setName(event.target.value)} value={name} />
           </label>
           <label>
             API Key
@@ -1783,7 +1809,7 @@ function App() {
         <Route path="/health" element={<RequireAdmin token={api.token} role={api.role}><HealthPage apiGet={api.apiGet} /></RequireAdmin>} />
         <Route path="/dashboard" element={<RequireAuth token={api.token}><DashboardPage apiGet={api.apiGet} apiPost={api.apiPost} role={api.role} token={api.token} /></RequireAuth>} />
         <Route path="/session" element={<RequireAdmin token={api.token} role={api.role}><SessionPage apiPost={api.apiPost} token={api.token} refreshToken={api.refreshToken} onLogout={api.logout} /></RequireAdmin>} />
-        <Route path="/devices" element={<RequireAdmin token={api.token} role={api.role}><DevicesPage apiGet={api.apiGet} apiPost={api.apiPost} role={api.role} token={api.token} /></RequireAdmin>} />
+        <Route path="/devices" element={<RequireAdmin token={api.token} role={api.role}><DevicesPage apiGet={api.apiGet} apiPost={api.apiPost} apiDelete={api.apiDelete} role={api.role} token={api.token} /></RequireAdmin>} />
         <Route path="/alerts" element={<RequireAdmin token={api.token} role={api.role}><AlertsPage apiGet={api.apiGet} token={api.token} /></RequireAdmin>} />
         <Route path="/rules" element={<RequireAdmin token={api.token} role={api.role}><RulesPage apiGet={api.apiGet} apiPost={api.apiPost} apiPatch={api.apiPatch} token={api.token} /></RequireAdmin>} />
         <Route path="/traffic" element={<RequireAuth token={api.token}><TrafficPage apiPost={api.apiPost} token={api.token} /></RequireAuth>} />

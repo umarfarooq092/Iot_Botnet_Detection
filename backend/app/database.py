@@ -215,6 +215,10 @@ class Database:
         with self.connect() as connection:
             connection.execute("DELETE FROM users WHERE username = ?", (username,))
 
+    def delete_device(self, device_id: str) -> None:
+        with self.connect() as connection:
+            connection.execute("DELETE FROM devices WHERE device_id = ?", (device_id,))
+
     def delete_refresh_tokens_for_user(self, username: str) -> None:
         with self.connect() as connection:
             connection.execute("DELETE FROM refresh_tokens WHERE username = ?", (username,))
